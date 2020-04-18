@@ -12,6 +12,32 @@ MapboxGL.setAccessToken("pk.eyJ1Ijoiam9zZWluZm9ybWF0aWNvMjAxNSIsImEiOiJjazdzNWFm
 // import userIcon from '../assets/example.png';
 import otherUserIcon from './assets/image/userIcon.png';
 
+const featureCollections = {
+  type: 'FeatureCollection',
+  features: [
+      {
+          type: 'Feature',
+          properties: {
+              icon: 'myIcon',
+          },
+          geometry: {
+              type: 'Point',
+              coordinates: [-73.970895, 40.723279]
+          },
+      },
+      {
+        type: 'Feature',
+        properties: {
+            icon: 'myIcon',
+        },
+        geometry: {
+            type: 'Point',
+            coordinates: [-73.979895, 40.729279]
+        },
+      },
+  ],
+};
+
 
 const stylesMap ={
   icon: {
@@ -29,8 +55,10 @@ export default class App extends Component {
     super(props);
 
     this.state = {
-      featureCollection: featureCollection([
-      ]),
+      // featureCollection: featureCollection([
+      // ]),
+      featureCollection:featureCollections,
+
     };
 
     this.onPress=this.onPress.bind(this);
