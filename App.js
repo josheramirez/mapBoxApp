@@ -6,6 +6,8 @@ import { StyleSheet, View, Dimensions, Text, Button, TouchableHighlight, Touchab
 import MapboxGL from "@react-native-mapbox-gl/maps";
 import {featureCollection, feature} from '@turf/turf';
 import Bubble from './Bubble';
+import {getDistance} from './assets/utils/utils';
+
 
 
 // import userIcon from '../assets/example.png';
@@ -64,8 +66,20 @@ export default class App extends Component {
     super(props);
 
     this.state = {
-      // featureCollection: featureCollection([
-      // ]),
+      thisUser:{
+        username:"Joshe Ramirez",
+        userLocation:[-73.9681,40.7228081],
+        helpState:false,
+        level:1
+      },
+      otherUser:{
+        username:null,
+        userLocation:[null,null],
+        helpState:false,
+        level:1
+      },
+      thisUserLocation:[-73.9681,40.7228081],
+      otherUserLocation:[null,null],
       featureCollection:featureCollections,
       route:
         {
@@ -76,25 +90,12 @@ export default class App extends Component {
               "properties": {},
               "geometry": {
                 "type": "LineString",
-                "coordinates": [
-                
-                  // [-73.970895, 40.723279],
-                  // [-74.0037382718885,40.97053006323466],
-                  // [-74.037382718885,41],
-                  // [
-                  //   11.953125,
-                  //   39.436192999314095
-                  // ],
-                  // [
-                  //   18.896484375,
-                  //   46.37725420510028
-                  // ]
-            
-                ]
+                "coordinates": []
               }
             }
           ]
-        },   
+        },
+        distance:0 
     
     };
 
@@ -102,39 +103,27 @@ export default class App extends Component {
     this.onPress=this.onPress.bind(this);
   }
 
-// consulta caminando
-
-// query= 'https://api.mapbox.com/directions/v5/mapbox/walking/'+start[0]+','+start[1]+';'+end[0]+','+end[1]+'?steps=true&geometries=geojson&access_token='+accessToken;
-
-
-
   componentDidMount() {
     MapboxGL.setTelemetryEnabled(false);
-   // console.log(this.state.featureCollection)
-    // this.setState({
-    //   featureCollection: featureCollection([
-    //     ...this.state.featureCollection.features,
-    //     feature({"geometry":{"coordinates":[-74.08796,40.6998],"type":"Point"}})
-    //   ]),
-    // });
-    // console.log("feature collections"+JSON.stringify(this.state.featureCollection))
-    //  console.log("puntos"+JSON.stringify(puntos))
-
-    console.log(this.state.route.features[0].geometry)
+    // console.log(this.state.route.features[0].geometry)
   }
   onSourceLayerPress(event) {
-    // console.log(event)
-
     const feature = event
     // console.log('JSON feature', JSON.stringify(feature)); // eslint-disable-line
-    // console.log('You pressed a layer here is your feature', feature); // eslint-disable-line
-  
+    const temp=getDistance(
+      this.state.thisUser.userLocation[0],this.state.thisUser.userLocation[1],
+      event.coordinates.longitude,event.coordinates.latitude
+    )
     this.setState({
+      otherUserLocation:[event.coordinates.longitude,event.coordinates.latitude],
       latitude: event.coordinates.latitude,
       longitude: event.coordinates.longitude,
       screenPointX: event.point.x,
       screenPointY: event.point.y,
+      distance:temp
     });
+    
+console.log(temp, this.state.thisUser.userLocation, this.state.otherUserLocation)
   }
 
 
@@ -157,18 +146,16 @@ export default class App extends Component {
 
     return (
       <Bubble>
-        <Text>Latitude: {this.state.latitude}</Text>
-        <Text>Longitude: {this.state.longitude}</Text>
-        <Text>Screen Point X: {this.state.screenPointX}</Text>
-        <Text>Screen Point Y: {this.state.screenPointY}</Text>
+        <Text>Usuario: {this.state.thisUser.username}</Text>
+        <Text>Distancia: {this.state.distance.toFixed(0)} mts.</Text>
         <TouchableHighlight
             style={styles.submit}
-            onPress={(element) => {this.onPressUser(element)}}
+            onPress={(element) => {this.showRoute(element)}}
             underlayColor='#fff'>
             <Text style={[styles.submitText]}>Ir en Ayuda</Text>
           </TouchableHighlight>
       </Bubble>
-    );r
+    );
   }
   async onPress(e) {
     // console.log(e);
@@ -185,34 +172,37 @@ export default class App extends Component {
     // console.log(JSON.stringify(e))
   }
 
-async onPressUser(e){
+async showRoute(e){
     
-    console.log('https://api.mapbox.com/directions/v5/mapbox/walking/-73.976044%2C40.783077%3B-73.98278%2C40.770824?alternatives=false&geometries=geojson&steps=false&access_token='+accessToken);
+
+console.log(this.state.thisUserLocation);
+console.log(this.state.otherUserLocation);
+    // console.log('https://api.mapbox.com/directions/v5/mapbox/walking/-73.976044%2C40.783077%3B-73.98278%2C40.770824?alternatives=false&geometries=geojson&steps=false&access_token='+accessToken);
     try {
       //Assign the promise unresolved first then get the data using the json method. 
 
       // const  = await fetch('https://pokeapi.co/api/v2/pokemon/');
 
-      const route = await fetch('https://api.mapbox.com/directions/v5/mapbox/walking/-73.976044%2C40.783077%3B-73.98278%2C40.770824?alternatives=false&geometries=geojson&steps=false&access_token='+accessToken);
-      console.log(route);
+      const routes = await fetch('https://api.mapbox.com/directions/v5/mapbox/walking/'+this.state.thisUserLocation[0]+'%2C'+this.state.thisUserLocation[1]+'%3B'+this.state.otherUserLocation[0]+'%2C'+this.state.otherUserLocation[1]+'?alternatives=false&geometries=geojson&steps=false&access_token='+accessToken);
+      //  console.log(route);
 
-      const pokemon = await route.json();
-      console.log(pokemon.routes[0].geometry);
+      const route = await routes.json();
+      // console.log(pokemon.routes[0].geometry);
 
-      const nuevo={
+      const routeFeature={
         "type": "FeatureCollection",
         "features": [
           {
             "type": "Feature",
             "properties": {},
-            "geometry": pokemon.routes[0].geometry
+            "geometry": route.routes[0].geometry
           }
         ]
       }
 
-     this.setState({route:nuevo});
+     this.setState({route:routeFeature});
 
-     console.log("el de state"+JSON.stringify(this.state.route));
+      console.log("el de state"+JSON.stringify(route.routes[0].distance));
 
     } catch(err) {
         console.log("Error fetching data-----------", err);
@@ -263,7 +253,7 @@ async onPressUser(e){
             </MapboxGL.ShapeSource>
 
             <MapboxGL.ShapeSource id='line1' shape={this.state.route}>
-            <MapboxGL.LineLayer id='linelayer1' style={{lineColor:'red'}} />
+            <MapboxGL.LineLayer id='linelayer1' style={{lineColor:'red', lineDasharray: [1, 1],lineWidth:4}} />
           </MapboxGL.ShapeSource>
 
           </MapboxGL.MapView>
